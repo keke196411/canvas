@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+	<head>
+	    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	    <title>测试</title>
+	    <style type="text/css">
+		    html,body{
+          		width:100%;
+		    	height:100%;
+		    	margin:0;
+		    	padding:0;
+          		overflow:hidden;
+          		background-color:#8ed2e6;
+		    }
+	    </style>
+	</head>
+	<body>
+		<canvas id="test"></canvas>
+		<div style="display:none">
+			<image src="./utils/comical.png" width="40" height="40">
+			<image src="./utils/spray.jpg" width="40" height="40">
+		</div>
+		<script type="module">
+			'use strict';
+			import Rocket from './utils/rocket.js';
+			import Ball from './utils/ball.js';
+			let canvas = document.getElementById("test"),
+				comical = document.querySelectorAll("img")[0],
+				spray = document.querySelectorAll("img")[1],
+				balls = [],nums = 5,radius = 25;
+			canvas.width = document.documentElement.offsetWidth;
+			canvas.height = document.documentElement.offsetHeight;
+			let ctx = canvas.getContext('2d'),
+				roc = new Rocket({
+					img:comical
+				});
+			let dir = 0,
+				speed = 0,
+				f = 0.92,
+				ax = 0,
+				ay = 0,
+				vx = 0,
+				vy = 0,
+				damp = 0.99,
+				c = 0,
+				sc = 0;
+			roc.x = canvas.width/2;
+			roc.y = canvas.height/2;
+			roc.draw(ctx);
+			
+			for(let i=0;i<nums;i++){
+			  let x = Math.random()*canvas.width,
+			      y = Math.random()*canvas.height,
+			      flag = true;
+			  for(let ball of balls){
+			    try{
+			      let dx = x - ball.x,
+			          dy = y - ball.y,
+			          distance = Math.sqrt(dx*dx+dy*dy);
+			      if(distance<=ball.radius*2+0.1){
+			        flag = false;
+			        break
+			      }
+			    }catch(e){
+
+			    }
+			  };
+			  if(flag) {
+			    balls[i] = new Ball({
+			      px:x,
+			      py:y,
+			      color:(()=>{return `rgb(${Math.floor(Math.random()*256)},${Math.floor(Math.random()*256)},${Math.floor(Math.random()*256)})`})(),
+			      radius:radius
+			    })
+			  }
+			};
+			// balls.push(roc)
+
+			window.addEventListener("keydown",function(e){
+				switch(e.key){
+					case 'a':
+						dir = -3;
+						break
+					case 'd':
+						dir = 3;
+						break
+					case 'w':
+						speed = 1;
+						roc.fire = true;
+						break
+				}
+			},false);
+			window.addEventListener("keyup",function(e){
+				switch(e.key){
+					case 'a':
+						dir = 0;
+						break
+					case 'd':
+						dir = 0;
+						break
+					case 'w':
+						speed = 0;
+						roc.fire = false;
+						break
+				}
+			},false);
+
+			(function redraw(){
+				ctx.clearRect(0,0,canvas.width,canvas.height);
+				roc.rotation += dir*Math.PI/180;
+
+				balls.forEach(function(ball,ib){  
+				  for(let j=ib+1;j<nums;j++){
+				    if(balls[j]){
+				      let dx = balls[j].x - ball.x,
+				          dy = balls[j].y - ball.y,
+				          distance = Math.sqrt(dx * dx + dy * dy);
+				      if(distance<=balls[j].radius+ball.radius+0.1){
+				        let x1 = ball.vx,
+				            x2 = balls[j].vx,
+				            y1 = ball.vy,
+				            y2 = balls[j].vy;
+				        ball.vx = x2;
+				        ball.vy = y2;
+				        balls[j].vx = x1;
+				        balls[j].vy = y1
+				      }
+				    }
+				  };
+				  let dx = ball.x - roc.x,
+			          dy = ball.y - roc.y,
+			          distance = Math.sqrt(dx * dx + dy * dy);
+		          if(distance<=roc.radius+ball.radius){
+		          	roc.img = spray;
+		          	sc = 1;
+		            let x1 = ball.vx,
+		                x2 = roc.vx,
+		                y1 = ball.vy,
+		                y2 = roc.vy;
+		            ball.vx = x2;
+		            ball.vy = y2;
+		            roc.vx = x1;
+		            roc.vy = y1;
+		          };
+		          sc&&c++;
+		          ball.vx *= damp; 
+		          ball.vy *= damp; 
+				  ball.x += ball.vx;
+				  ball.y += ball.vy;
+				  if(ball.x+ball.radius>ball.outerW){
+				    ball.x = ball.outerW - ball.radius;
+				    ball.vx *= -1
+				  }else if(ball.x-ball.radius<0){
+				    ball.x = ball.radius;
+				    ball.vx *= -1
+				  };
+				  if(ball.y+ball.radius>ball.outerH){
+				    ball.y = ball.outerH - ball.radius;
+				    ball.vy *= -1
+				  }else if(ball.y-ball.radius<0){
+				    ball.y = ball.radius;
+				    ball.vy *= -1
+				  };
+				  ball.draw(ctx);
+				});
+				ax = speed*Math.cos(roc.rotation);
+				ay = speed*Math.sin(roc.rotation);
+				roc.vx += ax;
+				roc.vy += ay;
+				roc.vx *= f;
+				roc.vy *= f;
+				roc.x += roc.vx;
+				roc.y += roc.vy;
+				if(roc.x+roc.radius/2>canvas.width){
+					roc.x = canvas.width - roc.radius/2;
+					roc.vx *= -1
+				}else if(roc.x-roc.radius/2<0){
+					roc.x = roc.radius/2;
+					roc.vx *= -1
+				};
+				if(roc.y+roc.radius/2>canvas.height){
+					roc.y = canvas.height - roc.radius/2;
+					roc.vy *= -1
+				}else if(roc.y-roc.radius/2<0){
+					roc.y = roc.radius/2;
+					roc.vy *= -1
+				};
+				if(c>60*10){
+					roc.img = comical;
+					sc = 0;
+					c = 0
+				};
+				roc.draw(ctx);
+				window.requestAnimationFrame(redraw)
+			})()
+		</script>
+	</body>
+</html>

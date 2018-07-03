@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+	<head>
+	    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	    <title>测试</title>
+	    <style type="text/css">
+		    html,body{
+          		width:100%;
+		    	height:100%;
+		    	margin:0;
+		    	padding:0;
+          		overflow:hidden;
+          		background-color:#45cb96;
+		    }
+	    </style>
+	</head>
+	<body>
+		<canvas id="test"></canvas>
+		<script type="module">
+			'use strict'
+			import Ball from './utils/ball.js'
+			window.onload = ()=>{
+				let canvas = document.getElementById("test");
+				let counter = 0;
+				canvas.width = window.innerWidth;
+				canvas.height = window.innerHeight;
+				let ctx = canvas.getContext("2d"),
+					collection = new Array(),
+					particles = 200,
+					threshold = 80,
+					stepping = 0.001;
+				let gravity = (ballA,ballB)=>{
+					let dx = ballB.x - ballA.x,
+						dy = ballB.y - ballA.y,
+						dis = Math.sqrt(dx*dx + dy*dy);
+					if(dis<=threshold){
+						let ax = dx*stepping,
+							ay = dy*stepping;
+						ballA.vx += ax;
+						ballA.vy += ay;
+						ballB.x += -ax;
+						ballB.y += -ay;
+						ctx.save();
+						ctx.strokeStyle = '#fff';
+						ctx.lineWidth = 0.5;
+						ctx.beginPath();
+						ctx.moveTo(ballA.x,ballA.y);
+						ctx.lineTo(ballB.x,ballB.y);
+						ctx.closePath();
+						ctx.stroke();
+						ctx.restore()
+					}
+				},move = (ball,i)=>{
+					ball.x += ball.vx;
+					ball.y += ball.vy;
+					if(ball.x-ball.radius>canvas.width){
+						ball.x = -ball.radius
+					}else if(ball.x+ball.radius<0){
+						ball.x = canvas.width+ball.radius
+					};
+					if(ball.y-ball.radius>canvas.height){
+						ball.y = -ball.radius
+					}else if(ball.y+ball.radius<0){
+						ball.y = canvas.height+ball.radius
+					};
+					for(let j=i+1;j<particles;j++){
+						gravity(ball,collection[j])
+					};
+					ball.draw(ctx)
+				};
+
+				for(let i=0;i<particles;i++){
+					var ball = new Ball({
+						radius:4,
+						color:'#fff',
+						speedH:Math.random()*2-1,
+						speedV:Math.random()*2-1
+					});
+					ball.draw(ctx);
+					collection.push(ball)
+				};
+
+				(function redraw(){
+					
+					if(counter%2==0){
+						ctx.clearRect(0,0,canvas.width,canvas.height);
+						collection.forEach(move);
+
+					}
+					counter = ++counter>60?0:counter;
+					window.requestAnimationFrame(redraw)
+				})()
+			}
+			
+
+		</script>
+
+	</body>
+</html>
